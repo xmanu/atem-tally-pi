@@ -2,7 +2,6 @@ const bonjour = require("bonjour")();
 const config = require("./config");
 const exec = require("child_process").exec;
 const fs = require('fs');
-const Gpio = require("onoff").Gpio;
 const os = require('os');
 const LocalStorage = require('node-localstorage').LocalStorage;
 const pjson = require('./package.json');
@@ -12,9 +11,9 @@ const { v4: uuidv4 } = require('uuid');
 
 const ifaces = os.networkInterfaces();
 const sessionio = require('socket.io')(server);
-
-const programLed = new Gpio(config.programGpio, 'out');
-const previewLed = new Gpio(config.previewGpio, 'out');
+const Blinkt = require('node-blinkt');
+var leds = new Blinkt();
+leds.setup()
 
 var localStorage = new LocalStorage('./tmp');
 
@@ -54,21 +53,21 @@ const getDevId = function() {
 }
 
 const updateTally = function() {
-    programLed.write(0);
-    previewLed.write(0);
+    leds.clearAll();
     if (!lastState.programSourceIds || !lastState.previewSourceIds)
         return;
 
     if (lastState.programSourceIds.includes(config.camera)) {
-        programLed.write(1);
+        leds.setAllPixels(0, 255, 0, 1.0);
     } else if (lastState.previewSourceIds.includes(config.camera)) {
-        previewLed.write(1);
+        leds.setAllPixels(255, 0, 0, 1.0);
     }
+    leds.sendUpdate();
 }
 
 const exitHandler = function(options, exitCode) {
-    programLed.write(0);
-    previewLed.write(0);
+    leds.clearAll();
+    leds.sendUpdate();
     if (options.cleanup) console.log('clean');
     if (exitCode || exitCode === 0) console.log(exitCode);
     if (options.exit) process.exit();
@@ -154,8 +153,8 @@ process.on('SIGUSR1', exitHandler.bind(null, { exit: true }));
 process.on('SIGUSR2', exitHandler.bind(null, { exit: true }));
 process.on('uncaughtException', exitHandler.bind(null, { exit: true }));
 
-programLed.write(1);
-previewLed.write(1);
+leds.setAllPixels(255, 255, 255, 1.0);
+leds.sendUpdate();
 
 sessionio.on('connection', (socket) => {
 
@@ -172,8 +171,8 @@ sessionio.on('connection', (socket) => {
 
         TallySocket.on('connect', function() {
             console.log("Connected to server ");
-            programLed.write(0);
-            previewLed.write(0);
+            leds.clearAll();
+            leds.sendUpdate();
         });
 
         TallySocket.on('update_tally', function(msg) {
@@ -182,12 +181,9 @@ sessionio.on('connection', (socket) => {
         });
 
         TallySocket.on('call', function(msg) {
-            programLed.write(0);
-            setTimeout(() => { programLed.write(1); }, 250);
-            setTimeout(() => { programLed.write(0); }, 500);
-            setTimeout(() => { programLed.write(1); }, 750);
-            setTimeout(() => { programLed.write(0); }, 1000);
-            setTimeout(() => { updateTally(); }, 1000);
+            leds.setAllPixels(255, 255, 255, 1.0);
+            leds.sendUpdate();
+            setTimeout(() => { updateTally(); }, 5000);
         });
 
         TallySocket.on('set_remote', function(msg) {
@@ -200,15 +196,9 @@ sessionio.on('connection', (socket) => {
                 }
 
                 if (msg.identify) {
-                    programLed.write(0);
-                    setTimeout(() => { programLed.write(1); }, 250);
-                    setTimeout(() => { programLed.write(0); }, 500);
-                    setTimeout(() => { programLed.write(1); }, 750);
-                    setTimeout(() => { programLed.write(0); }, 1000);
-                    setTimeout(() => { programLed.write(1); }, 1250);
-                    setTimeout(() => { programLed.write(0); }, 1500);
-                    setTimeout(() => { programLed.write(1); }, 1750);
-                    setTimeout(() => { updateTally(); }, 2000);
+                    leds.setAllPixels(0, 0, 255, 1.0);
+                    leds.sendUpdate();
+                    setTimeout(() => { updateTally(); }, 5000);
                 }
             }
         });
@@ -227,8 +217,8 @@ sessionio.on('connection', (socket) => {
 
         TallySocket.on('disconnect', function() {
             console.log("Disconnected from server");
-            programLed.write(1);
-            previewLed.write(1);
+            leds.setAllPixels(255, 255, 255, 1.0);
+            leds.sendUpdate();
             TallySocket = null;
         });
     });

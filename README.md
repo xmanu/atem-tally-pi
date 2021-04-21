@@ -7,6 +7,8 @@ You also will need to install Node.js on your Pi before you begin. For Pi 2 and 
 You will also need the ATEM Tally application installed from
 https://designshift.ca/apps/atem-tally
 
+This fork uses https://github.com/Irrelon/node-blinkt and [Blinkt](https://shop.pimoroni.com/products/blinkt) as Tally LEDs.
+
 # Installation
 
 1. Open the terminal on your Raspberry Pi
