@@ -58,9 +58,9 @@ const updateTally = function() {
         return;
 
     if (lastState.programSourceIds.includes(config.camera)) {
-        leds.setAllPixels(0, 255, 0, 1.0);
-    } else if (lastState.previewSourceIds.includes(config.camera)) {
         leds.setAllPixels(255, 0, 0, 1.0);
+    } else if (lastState.previewSourceIds.includes(config.camera)) {
+        leds.setAllPixels(0, 255, 0, 1.0);
     }
     leds.sendUpdate();
 }
